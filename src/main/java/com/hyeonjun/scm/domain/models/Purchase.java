@@ -1,5 +1,10 @@
 package com.hyeonjun.scm.domain.models;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
 import com.hyeonjun.scm.domain.errors.ErrorCode;
 import com.hyeonjun.scm.domain.errors.FormSyntaxException;
 
@@ -13,8 +18,11 @@ import lombok.ToString;
 @Getter
 @ToString
 @EqualsAndHashCode
+@Entity
 public class Purchase {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private Integer userId;
