@@ -41,7 +41,7 @@ public class Product {
         this.setPrice(price);
     }
 
-    public void setId(Integer id) {
+    protected void setId(Integer id) {
         if (id != null && id < 0) {
             throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "ID must be positive number");
         }
