@@ -1,6 +1,7 @@
 package com.hyeonjun.scm.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hyeonjun.scm.domain.errors.NoEntityException;
 import com.hyeonjun.scm.domain.models.Product;
 import com.hyeonjun.scm.repo.ProductRepo;
+import com.hyeonjun.scm.repo.PurchaseRepo;
 import com.hyeonjun.scm.service.impl.ProductSvcImpl;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -22,16 +24,16 @@ import org.springframework.data.domain.PageRequest;
 
 @DataJpaTest
 @TestInstance(Lifecycle.PER_CLASS)
-public class ProductServiceTests {
+public class PurchaseServiceTests {
 
-    ProductService svc;
+    PurchaseService svc;
     
     @Autowired
-    ProductRepo repo;
+    PurchaseRepo repo;
 
     @BeforeAll
     public void prepareTest() {
-        svc = new ProductSvcImpl(repo);
+        svc = new PurchaseService(repo);
     }
     
     @Test

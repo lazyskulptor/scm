@@ -1,8 +1,8 @@
 package com.hyeonjun.scm.domain.models;
 
+import java.io.Serializable;
+
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 import com.hyeonjun.scm.domain.errors.ErrorCode;
@@ -19,14 +19,15 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 @Entity
-public class Purchase {
+public class Purchase implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Id
     private Integer userId;
 
+    @Id
     private Integer productId;
 
     private int price;
