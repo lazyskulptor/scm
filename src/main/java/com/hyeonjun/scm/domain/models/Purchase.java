@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 
 import com.hyeonjun.scm.domain.errors.ErrorCode;
 import com.hyeonjun.scm.domain.errors.FormSyntaxException;
@@ -19,6 +20,7 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 @Entity
+@IdClass(PurchaseId.class)
 public class Purchase implements Serializable {
 
     @Id
@@ -45,7 +47,7 @@ public class Purchase implements Serializable {
     }
 
     protected void setId(Integer id) {
-        if (id != null && id < 0) {
+        if (id == null || id < 0) {
             throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "ID must be positive number");
         }
         this.id = id;

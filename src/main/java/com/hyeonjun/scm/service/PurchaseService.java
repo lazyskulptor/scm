@@ -8,7 +8,7 @@ import com.hyeonjun.scm.domain.models.User;
 
 public interface PurchaseService {
 
-    void registerPurchase(Purchase purchase);
+    Integer registerPurchase(Purchase purchase);
 
     Optional<Integer> getSumOfUsers(User user);
     

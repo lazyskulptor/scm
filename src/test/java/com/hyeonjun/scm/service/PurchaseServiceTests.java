@@ -1,26 +1,28 @@
 package com.hyeonjun.scm.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hyeonjun.scm.domain.errors.NoEntityException;
+import java.util.Optional;
+import java.util.Random;
+
 import com.hyeonjun.scm.domain.models.Product;
+import com.hyeonjun.scm.domain.models.Purchase;
+import com.hyeonjun.scm.domain.models.PurchaseId;
+import com.hyeonjun.scm.domain.models.User;
 import com.hyeonjun.scm.repo.ProductRepo;
 import com.hyeonjun.scm.repo.PurchaseRepo;
-import com.hyeonjun.scm.service.impl.ProductSvcImpl;
+import com.hyeonjun.scm.repo.UserRepo;
+import com.hyeonjun.scm.service.impl.PurchaseSvcImpl;
 
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 
 @DataJpaTest
 @TestInstance(Lifecycle.PER_CLASS)
@@ -31,67 +33,76 @@ public class PurchaseServiceTests {
     @Autowired
     PurchaseRepo repo;
 
+    @Autowired
+    ProductRepo prRepo;
+
+    @Autowired
+    UserRepo userRepo;
+
+    User client;
+    Product product;
+
     @BeforeAll
     public void prepareTest() {
-        svc = new PurchaseService(repo);
+        svc = new PurchaseSvcImpl(repo);
+    }
+
+    @BeforeEach
+    public void prepareFixtures() {
+        client = new User(null, RandomString.make(10));
+        userRepo.save(client);
+        product = new Product(new Random().nextInt(10000000), "p1", new Random().nextInt(10000000));
+        prRepo.save(product);
     }
     
     @Test
     public void testRegisterProduct() {
-        Product product = new Product("client1", 100);
+        Purchase purchase = new Purchase(new Random().nextInt(100000), client, product, new Random().nextInt(100000));
 
-        Integer pk = svc.saveProduct(product);
+        Integer pk = svc.registerPurchase(purchase);
 
-        Product saved = repo.getById(pk);
-        assertEquals(product.getName(), saved.getName());
-        assertNotNull(saved.getId());
+        Purchase saved = repo.getById(new PurchaseId(pk, client.getId(), product.getId()));
+
+        System.out.println("ABCD");
+        System.out.println(saved);
+
+        assertEquals(purchase.getProductId(), saved.getProductId());
+        assertEquals(purchase.getId(), saved.getId());
     }
-
+    
     @Test
-    public void testReadSingleProduct() {
-        Product product = new Product("client1", 100);
+    public void testGetPurchaseSumOfUser() {
+        Product product1 = new Product(new Random().nextInt(10000000), "p1", new Random().nextInt(10000000));
+        Purchase purchase1 = new Purchase(new Random().nextInt(100000), client, product1, product1.getPrice());
+        repo.save(purchase1);
+        Product product2 = new Product(new Random().nextInt(10000000), "p2", new Random().nextInt(10000000));
+        Purchase purchase2 = new Purchase(new Random().nextInt(100000), client, product2, product2.getPrice());
+        repo.save(purchase2);
+        Product product3 = new Product(new Random().nextInt(10000000), "p3", new Random().nextInt(10000000));
+        Purchase purchase3 = new Purchase(new Random().nextInt(100000), client, product3, product3.getPrice());
+        repo.save(purchase3);
 
-        Integer pk = svc.saveProduct(product);
-        Product persisted = svc.getProduct(pk);
+        Optional<Integer> sum = svc.getSumOfUsers(client);
 
-        assertEquals(product.getName(), persisted.getName());
-        assertNotNull(persisted.getId());
+        Integer expected = product1.getPrice() + product2.getPrice() + product3.getPrice();
+        assertEquals(expected, sum.get());
     }
+    
+    // @Test
+    // public void testGetPurchaseSumOfProduct() {
+    //     User c1 = new Product(new Random().nextInt(10000000), "p1", new Random().nextInt(10000000));
+    //     Purchase purchase1 = new Purchase(new Random().nextInt(100000), client, product1, product1.getPrice());
+    //     repo.save(purchase1);
+    //     Product product2 = new Product(new Random().nextInt(10000000), "p2", new Random().nextInt(10000000));
+    //     Purchase purchase2 = new Purchase(new Random().nextInt(100000), client, product2, product2.getPrice());
+    //     repo.save(purchase2);
+    //     Product product3 = new Product(new Random().nextInt(10000000), "p3", new Random().nextInt(10000000));
+    //     Purchase purchase3 = new Purchase(new Random().nextInt(100000), client, product3, product3.getPrice());
+    //     repo.save(purchase3);
 
-    @Test
-    public void testReadProductList() {
-        svc.saveProduct(new Product("client1", 100));
-        svc.saveProduct(new Product("client2", 100));
-        svc.saveProduct(new Product("client3", 100));
-        svc.saveProduct(new Product("client4", 100));
-        svc.saveProduct(new Product("client5", 100));
+    //     Optional<Integer> sum = svc.getSumOfUsers(client);
 
-        Page<Product> page = svc.getProductList(PageRequest.of(0, 20));
-        assertTrue(page.getSize() > 5);
-    }
-
-    @Test
-    public void testUpdateProduct() {
-        Product product = new Product("client1", 100);
-        svc.saveProduct(product);
-        product.setPrice(1000);
-        svc.saveProduct(product);
-
-        Product saved = svc.getProduct(product.getId());
-
-        assertEquals(1000, saved.getPrice());
-        assertEquals(1000, product.getPrice());
-    }
-
-    @Test
-    public void testDeleteProduct() {
-        Product product = new Product("client1", 100);
-        svc.saveProduct(product);
-        Product saved = svc.getProduct(product.getId());
-        svc.deleteProduct(product.getId());
-        Executable getDeleted = () -> svc.getProduct(product.getId());
-
-        assertNotNull(saved.getId());
-        assertThrows(NoEntityException.class, getDeleted);
-    }
+    //     Integer expected = product1.getPrice() + product2.getPrice() + product3.getPrice();
+    //     assertEquals(expected, sum.get());
+    // }
 }
