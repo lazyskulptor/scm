@@ -1,18 +1,25 @@
 package com.hyeonjun.scm.controller;
 
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-import com.hyeonjun.scm.domain.errors.ErrorCode;
-import com.hyeonjun.scm.domain.errors.FormSyntaxException;
 import com.hyeonjun.scm.domain.models.Product;
+import com.hyeonjun.scm.domain.models.Purchase;
+import com.hyeonjun.scm.domain.models.User;
 import com.hyeonjun.scm.dto.ListProductDTO;
 import com.hyeonjun.scm.dto.ProductDTO;
+import com.hyeonjun.scm.dto.ProductStatDTO;
+import com.hyeonjun.scm.dto.ProductStatisticsDTO;
 import com.hyeonjun.scm.dto.SingleProductDTO;
+import com.hyeonjun.scm.dto.SinglePurchaseDTO;
+import com.hyeonjun.scm.dto.UserStatisticsDTO;
+import com.hyeonjun.scm.dto.UserStatsDTO;
 import com.hyeonjun.scm.service.ProductService;
+import com.hyeonjun.scm.service.PurchaseService;
+import com.hyeonjun.scm.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,54 +32,58 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/purchase")
+@RestController()
+@RequestMapping(value = "/purchase", produces = "application/json; charset=UTF-8")
 public class PurchaseController {
 
     @Autowired
-    ProductService svc;
+    PurchaseService svc;
+    @Autowired
+    ProductService prodSvc;
+    @Autowired
+    UserService userSvc;
 
     @PostMapping
-    public ResponseEntity<SingleProductDTO> postProduct(@RequestBody SingleProductDTO dto) {
-        Product reqBody = dto.getProduct().toEntity();
-        if (reqBody.getId() == null) {
-            svc.saveProduct(reqBody);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new SingleProductDTO(new ProductDTO(reqBody)));
-        }
-        throw new FormSyntaxException(ErrorCode.ENTITY_DUPLICATE, "중복된 Product가 존재합니다");
+    public ResponseEntity<SinglePurchaseDTO> postPurchase(@RequestBody SinglePurchaseDTO dto) {
+        Product product = prodSvc.getProduct(dto.getPurchase().getProductId());
+        User user = userSvc.getUser(dto.getPurchase().getUserId());
+        Purchase purchase = new Purchase(dto.getPurchase().getId(), user, product, dto.getPurchase().getPrice());
+        svc.registerPurchase(purchase);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
-    @GetMapping
-    public ResponseEntity<ListProductDTO> getProductList(@RequestParam(defaultValue = "0") Integer offset,
-            @RequestParam(defaultValue = "20") Integer limit) {
-        Page<Product> found = svc.getProductList(PageRequest.of(offset, limit));
+    @GetMapping("/product")
+    public ResponseEntity<ProductStatisticsDTO> getProductList() {
+        List<Purchase> list = svc.getPurchaseList();
 
-        return ResponseEntity.ok(new ListProductDTO(found.get().map(ProductDTO::new).collect(Collectors.toList())));
+        HashMap<Integer, ProductStatDTO> merged = list.stream().map(ProductStatDTO::new).collect(HashMap<Integer, ProductStatDTO>::new, (map, ele) -> {
+            if (map.get(ele.getId()) != null) {
+                int sum = ele.getSum() + map.get(ele.getId()).getSum();
+                ele.setSum(sum);
+                map.put(ele.getId(), ele);
+            }
+            map.put(ele.getId(), ele);
+
+        }, HashMap::putAll);
+
+        return ResponseEntity.ok(new ProductStatisticsDTO(new ArrayList<>(merged.values())));
     }
 
-    @GetMapping("/{productId}")
-    public ResponseEntity<SingleProductDTO> getProduct(@PathVariable Integer productId) {
-        Product found = svc.getProduct(productId);
+    @GetMapping("/user")
+    public ResponseEntity<UserStatisticsDTO> getProduct() {
+        List<Purchase> list = svc.getPurchaseList();
 
-        return ResponseEntity.ok(new SingleProductDTO(new ProductDTO(found)));
+        HashMap<Integer, UserStatsDTO> merged = list.stream().map(UserStatsDTO::new).collect(HashMap::new, (map, ele) -> {
+            if (map.get(ele.getId()) != null) {
+                int sum = ele.getSum() + map.get(ele.getId()).getSum();
+                ele.setSum(sum);
+                map.put(ele.getId(), ele);
+            }
+            map.put(ele.getId(), ele);
 
+        }, HashMap::putAll);
+
+        return ResponseEntity.ok(new UserStatisticsDTO(new ArrayList<>(merged.values())));
     }
 
-    @PutMapping("/{productId}")
-    public ResponseEntity<String> getProduct(@PathVariable Integer productId,
-            @RequestBody SingleProductDTO dto) {
-        Product reqBody = dto.getProduct().toEntity();
-        Product found = svc.getProduct(productId);
-        found.setName(reqBody.getName());
-        found.setPrice(reqBody.getPrice());
-        svc.saveProduct(found);
-
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-    }
-
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<String> delProduct(@PathVariable Integer productId) {
-        svc.deleteProduct(productId);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-    }
 }

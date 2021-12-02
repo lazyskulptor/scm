@@ -5,6 +5,8 @@ import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 import com.hyeonjun.scm.domain.errors.ErrorCode;
 import com.hyeonjun.scm.domain.errors.FormSyntaxException;
@@ -27,22 +29,21 @@ public class Purchase implements Serializable {
     private Integer id;
 
     @Id
-    private Integer userId;
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
 
     @Id
-    private Integer productId;
+    @ManyToOne
+    @JoinColumn(name="product_id")
+    private Product product;
 
     private int price;
 
     public Purchase(Integer id, User user, Product product, int price) {
-        if (user == null) {
-            throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "User can't be null");
-        } else if (product == null) {
-            throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "product can't be null");
-        }
         this.setId(id);
-        this.setUserId(user.getId());
-        this.setProductId(product.getId());
+        this.setUser(user);
+        this.setProduct(product);
         this.setPrice(price);
     }
 
@@ -53,18 +54,18 @@ public class Purchase implements Serializable {
         this.id = id;
     }
 
-    protected void setUserId(Integer userId) {
-        if (userId == null || userId < 0) {
+    public void setUser(User user) {
+        if (user == null || user.getId() == null || user.getId() < 0) {
             throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "User ID must be positive number");
         }
-        this.userId = userId;
+        this.user = user;
     }
 
-    protected void setProductId(Integer productId) {
-        if (productId == null || productId < 0) {
+    public void setProduct(Product product) {
+        if (product == null || product.getId() == null || product.getId() < 0) {
             throw new FormSyntaxException(ErrorCode.NOT_VALID_PARAMETERS, "Product ID must be positive number");
         }
-        this.productId = productId;
+        this.product = product;
     }
 
     protected void setPrice(int price) {
