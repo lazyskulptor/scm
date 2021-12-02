@@ -19,7 +19,7 @@ public class PurchaseId implements Serializable {
     
     private Integer id;
 
-    private Integer userId;
+    private Integer user;
 
-    private Integer productId;
+    private Integer product;
 }
