@@ -78,4 +78,5 @@ public class PurchaseController {
 
         return ResponseEntity.ok(new UserStatisticsDTO(new ArrayList<>(merged.values())));
     }
+
 }
